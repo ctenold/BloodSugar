@@ -396,12 +396,21 @@
       color: var(--text-secondary);
       border: 1px solid transparent;
       transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .tag-indicator:hover:not(.logged) {
+      border-color: var(--primary-light);
+      background: var(--bg-card);
+      transform: translateY(-1px);
     }
 
     .tag-indicator.logged {
       background: var(--in-range);
       border-color: var(--primary-light);
       color: var(--primary-dark);
+      cursor: default;
+      opacity: 0.7;
     }
 
     .tag-dot {
@@ -808,6 +817,15 @@
     .reading-item:hover {
       border-color: var(--border-color);
       background: var(--bg-card);
+    }
+
+    .reading-item.highlight {
+      animation: highlightPulse 2s ease;
+    }
+
+    @keyframes highlightPulse {
+      0%, 100% { background: var(--bg-secondary); }
+      25%, 75% { background: var(--in-range); border-color: var(--primary); }
     }
 
     .reading-info {
@@ -1506,6 +1524,7 @@
     function showEntryForm() {
       document.getElementById('entryForm').classList.remove('hidden');
       document.getElementById('entryForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      updateTagDropdown();
     }
 
     function hideEntryForm() {
@@ -1556,6 +1575,57 @@
       }
     }
 
+    function getTagsUsedOnDate(date) {
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+      return new Set(appData.readings.filter(r => {
+        const readingDate = new Date(r.timestamp);
+        readingDate.setHours(0, 0, 0, 0);
+        return readingDate.getTime() === targetDate.getTime();
+      }).map(r => r.tag));
+    }
+
+    function updateTagDropdown() {
+      const timestamp = document.getElementById('timestamp').value;
+      const tagSelect = document.getElementById('tag');
+      const usedTags = getTagsUsedOnDate(timestamp);
+      
+      const customOption = tagSelect.querySelector('option[value="custom"]');
+      if (customOption) {
+        customOption.remove();
+      }
+      tagSelect.querySelectorAll('option[data-custom="true"]').forEach(opt => opt.remove());
+      
+      Array.from(tagSelect.options).forEach(option => {
+        if (option.value && option.value !== 'custom') {
+          option.disabled = usedTags.has(option.value);
+          if (usedTags.has(option.value)) {
+            option.textContent = TAG_NAMES[option.value] + ' (already logged)';
+          } else {
+            option.textContent = TAG_NAMES[option.value] || option.value;
+          }
+        }
+      });
+
+      appData.customTags.forEach(ct => {
+        const option = document.createElement('option');
+        option.value = ct.id;
+        option.dataset.custom = 'true';
+        option.disabled = usedTags.has(ct.id);
+        option.textContent = usedTags.has(ct.id) ? ct.name + ' (already logged)' : ct.name;
+        tagSelect.appendChild(option);
+      });
+
+      const newCustomOption = document.createElement('option');
+      newCustomOption.value = 'custom';
+      newCustomOption.textContent = '+ Add Custom Tag';
+      tagSelect.appendChild(newCustomOption);
+
+      if (usedTags.has(tagSelect.value)) {
+        tagSelect.value = '';
+      }
+    }
+
     function submitReading(e) {
       e.preventDefault();
       
@@ -1563,6 +1633,12 @@
       const timestamp = document.getElementById('timestamp').value;
       const reading = parseFloat(document.getElementById('reading').value);
       const notes = document.getElementById('notes').value;
+
+      const usedTags = getTagsUsedOnDate(timestamp);
+      if (tag !== 'custom' && usedTags.has(tag)) {
+        alert('This tag has already been used today. Please choose a different tag.');
+        return;
+      }
 
       if (tag === 'custom') {
         const customName = document.getElementById('customTagName').value.trim();
@@ -1630,14 +1706,31 @@
 
       usedTags.forEach(tag => {
         const tagName = TAG_NAMES[tag] || appData.customTags.find(t => t.id === tag)?.name || tag;
+        const isLogged = todayTags.has(tag);
         const indicator = document.createElement('div');
-        indicator.className = 'tag-indicator' + (todayTags.has(tag) ? ' logged' : '');
+        indicator.className = 'tag-indicator' + (isLogged ? ' logged' : '');
         indicator.innerHTML = `
           <span class="tag-dot"></span>
           <span>${tagName}</span>
         `;
+        if (!isLogged) {
+          indicator.addEventListener('click', () => quickAddReading(tag));
+          indicator.title = 'Click to add reading';
+        } else {
+          indicator.title = 'Already logged today';
+        }
         indicators.appendChild(indicator);
       });
+    }
+
+    function quickAddReading(tag) {
+      setCurrentDateTime();
+      document.getElementById('entryForm').classList.remove('hidden');
+      updateTagDropdown();
+      document.getElementById('tag').value = tag;
+      updateRangeIndicator();
+      document.getElementById('entryForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('reading').focus();
     }
 
     function updateInsights() {
@@ -1750,7 +1843,8 @@
         const data = tagReadings.map(r => ({
           x: new Date(r.timestamp),
           y: r.reading,
-          notes: r.notes
+          notes: r.notes,
+          readingId: r.id
         }));
 
         const color = TAG_COLORS[tag] || '#9E9E9E';
@@ -1798,11 +1892,32 @@
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
               ticks: { callback: (value) => value + ' mg/dL' }
             }
-          }
+          },
+          onClick: handleChartClick
         }
       });
 
       updateChartLegend(allTags);
+    }
+
+    function handleChartClick(event, elements) {
+      if (elements.length === 0) return;
+      
+      const element = elements[0];
+      const dataPoint = chart.data.datasets[element.datasetIndex].data[element.index];
+      
+      if (dataPoint && dataPoint.readingId) {
+        scrollToReading(dataPoint.readingId);
+      }
+    }
+
+    function scrollToReading(readingId) {
+      const readingElement = document.querySelector(`[data-reading-id="${readingId}"]`);
+      if (readingElement) {
+        readingElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        readingElement.classList.add('highlight');
+        setTimeout(() => readingElement.classList.remove('highlight'), 2000);
+      }
     }
 
     function renderSingleDateChart(canvas, ctx) {
@@ -1829,7 +1944,8 @@
           notes: r.notes,
           tag: r.tag,
           low: range?.low,
-          high: range?.high
+          high: range?.high,
+          readingId: r.id
         };
       }).sort((a, b) => a.x - b.x);
 
@@ -1909,7 +2025,8 @@
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
               ticks: { callback: (value) => value + ' mg/dL' }
             }
-          }
+          },
+          onClick: handleChartClick
         }
       });
 
@@ -1939,7 +2056,8 @@
       const data = tagReadings.map(r => ({
         x: new Date(r.timestamp),
         y: r.reading,
-        notes: r.notes
+        notes: r.notes,
+        readingId: r.id
       })).sort((a, b) => a.x - b.x);
 
       const datasets = [{
@@ -2003,7 +2121,8 @@
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
               ticks: { callback: (value) => value + ' mg/dL' }
             }
-          }
+          },
+          onClick: handleChartClick
         }
       });
 
@@ -2105,7 +2224,7 @@
         }
 
         return `
-          <div class="reading-item">
+          <div class="reading-item" data-reading-id="${r.id}">
             <div class="reading-info">
               <div class="reading-header">
                 <span class="reading-tag">${tagName}</span>
@@ -2320,6 +2439,7 @@
       document.getElementById('readingForm').addEventListener('submit', submitReading);
       document.getElementById('tag').addEventListener('change', handleTagChange);
       document.getElementById('reading').addEventListener('input', updateRangeIndicator);
+      document.getElementById('timestamp').addEventListener('change', updateTagDropdown);
 
       document.querySelectorAll('.profile-option').forEach(option => {
         option.addEventListener('click', () => {
