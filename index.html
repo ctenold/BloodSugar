@@ -1558,6 +1558,7 @@
         return;
       }
 
+      if (!appData.profile || !RANGES[appData.profile]) return;
       const range = RANGES[appData.profile][tag];
       if (!range) return;
 
@@ -1967,13 +1968,15 @@
 
       if (minLow !== null && maxHigh !== null) {
         datasets.push({
-          label: 'Lower Bound',
+          label: 'Target Range',
           data: data.map(d => ({ x: d.x, y: minLow })),
           borderColor: 'rgba(124, 152, 133, 0.4)',
           borderDash: [5, 5],
           pointRadius: 0,
-          fill: '+1',
-          backgroundColor: 'rgba(124, 152, 133, 0.15)'
+          fill: {
+            target: 2,
+            above: 'rgba(124, 152, 133, 0.15)'
+          }
         });
         datasets.push({
           label: 'Upper Bound',
@@ -2012,6 +2015,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            filler: { propagate: false },
             legend: { display: false },
             tooltip: {
               callbacks: {
@@ -2088,13 +2092,15 @@
 
       if (range) {
         datasets.push({
-          label: 'Lower Bound',
+          label: 'Target Range',
           data: data.map(d => ({ x: d.x, y: range.low })),
           borderColor: 'rgba(124, 152, 133, 0.5)',
           borderDash: [5, 5],
           pointRadius: 0,
-          fill: '+1',
-          backgroundColor: 'rgba(124, 152, 133, 0.15)'
+          fill: {
+            target: 2,
+            above: 'rgba(124, 152, 133, 0.15)'
+          }
         });
         datasets.push({
           label: 'Upper Bound',
@@ -2115,6 +2121,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
+            filler: { propagate: false },
             legend: { display: false },
             tooltip: {
               callbacks: {
