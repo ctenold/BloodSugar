@@ -399,7 +399,7 @@
       cursor: pointer;
     }
 
-    .tag-indicator:hover:not(.logged) {
+    .tag-indicator:hover {
       border-color: var(--primary-light);
       background: var(--bg-card);
       transform: translateY(-1px);
@@ -409,8 +409,6 @@
       background: var(--in-range);
       border-color: var(--primary-light);
       color: var(--primary-dark);
-      cursor: default;
-      opacity: 0.7;
     }
 
     .tag-dot {
@@ -1714,12 +1712,8 @@
           <span class="tag-dot"></span>
           <span>${tagName}</span>
         `;
-        if (!isLogged) {
-          indicator.addEventListener('click', () => quickAddReading(tag));
-          indicator.title = 'Click to add reading';
-        } else {
-          indicator.title = 'Already logged today';
-        }
+        indicator.addEventListener('click', () => quickAddReading(tag));
+        indicator.title = isLogged ? 'Add another reading' : 'Click to add reading';
         indicators.appendChild(indicator);
       });
     }
@@ -1974,8 +1968,9 @@
           borderDash: [5, 5],
           pointRadius: 0,
           fill: {
-            target: 2,
-            above: 'rgba(124, 152, 133, 0.15)'
+            target: '+1',
+            above: 'rgba(124, 152, 133, 0.15)',
+            below: 'rgba(124, 152, 133, 0.15)'
           }
         });
         datasets.push({
@@ -2098,8 +2093,9 @@
           borderDash: [5, 5],
           pointRadius: 0,
           fill: {
-            target: 2,
-            above: 'rgba(124, 152, 133, 0.15)'
+            target: '+1',
+            above: 'rgba(124, 152, 133, 0.15)',
+            below: 'rgba(124, 152, 133, 0.15)'
           }
         });
         datasets.push({
