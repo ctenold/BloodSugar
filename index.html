@@ -1328,17 +1328,21 @@
     // Tag colors for chart - peaceful palette
     const TAG_COLORS = {
       'morning-fasting': '#7c9885',
-      'pre-lunch': '#a8c5b0',
-      'post-lunch1': '#8fa89a',
-      'post-lunch2': '#5d7a66',
-      'pre-dinner': '#d4a574',
-      'post-dinner1': '#c49470',
-      'post-dinner2': '#b8846c'
+      'post-breakfast1': '#a8c5b0',
+      'post-breakfast2': '#8fa89a',
+      'pre-lunch': '#5d7a66',
+      'post-lunch1': '#d4a574',
+      'post-lunch2': '#c49470',
+      'pre-dinner': '#b8846c',
+      'post-dinner1': '#9e9e9e',
+      'post-dinner2': '#808080',
     };
 
     // Tag display names
     const TAG_NAMES = {
       'morning-fasting': 'Morning Fasting',
+      'post-breakfast1': 'Post-Breakfast (1hr)',
+      'post-breakfast2': 'Post-Breakfast (2hr)',
       'pre-lunch': 'Pre-Lunch',
       'post-lunch1': 'Post-Lunch (1hr)',
       'post-lunch2': 'Post-Lunch (2hr)',
@@ -1351,6 +1355,8 @@
     const RANGES = {
       male: {
         'morning-fasting': { low: 80, high: 100, warning: 125 },
+        'post-breakfast1': { low: 80, high: 130 },
+        'post-breakfast2': { low: 80, high: 180 },
         'pre-lunch': { low: 80, high: 130 },
         'post-lunch1': { low: 80, high: 180 },
         'post-lunch2': { low: 80, high: 140 },
@@ -1360,6 +1366,8 @@
       },
       female: {
         'morning-fasting': { low: 80, high: 100, warning: 125 },
+        'post-breakfast1': { low: 80, high: 130 },
+        'post-breakfast2': { low: 80, high: 180 },
         'pre-lunch': { low: 80, high: 130 },
         'post-lunch1': { low: 80, high: 180 },
         'post-lunch2': { low: 80, high: 140 },
@@ -1369,11 +1377,13 @@
       },
       pregnant: {
         'morning-fasting': { low: 70, high: 95 },
+        'post-breakfast1': { low: 70, high: 100 },
+        'post-breakfast2': { low: 80, high: 140 },
         'pre-lunch': { low: 70, high: 100 },
-        'post-lunch1': { low: 100, high: 140 },
-        'post-lunch2': { low: 70, high: 120 },
+        'post-lunch1': { low: 80, high: 140 },
+        'post-lunch2': { low: 80, high: 120 },
         'pre-dinner': { low: 70, high: 100 },
-        'post-dinner1': { low: 100, high: 140 },
+        'post-dinner1': { low: 80, high: 140 },
         'post-dinner2': { low: 70, high: 120 }
       }
     };
