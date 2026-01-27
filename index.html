@@ -569,6 +569,51 @@
       font-weight: 500;
     }
 
+    .chart-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chart-controls-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chart-view-selector {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-secondary);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .view-btn {
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 0.8em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    .view-btn.active {
+      background: var(--bg-card);
+      color: var(--primary);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
     .time-range-selector {
       display: flex;
       gap: 6px;
@@ -600,6 +645,21 @@
       box-shadow: 0 2px 8px var(--shadow);
     }
 
+    .chart-filter-select {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 0.85em;
+      cursor: pointer;
+    }
+
+    .chart-filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
     .chart-container {
       width: 100%;
       height: 300px;
@@ -614,6 +674,21 @@
       margin-top: 20px;
       padding-top: 20px;
       border-top: 1px solid var(--border-color);
+      align-items: center;
+    }
+
+    .legend-reset {
+      font-size: 0.8em;
+      color: var(--primary);
+      cursor: pointer;
+      margin-left: auto;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .legend-reset:hover {
+      background: var(--bg-secondary);
     }
 
     .legend-item {
@@ -1118,11 +1193,24 @@
     <div class="chart-section" id="chartSection">
       <div class="chart-header">
         <h3>Trends</h3>
-        <div class="time-range-selector">
-          <button class="range-btn active" data-days="7">7d</button>
-          <button class="range-btn" data-days="14">14d</button>
-          <button class="range-btn" data-days="30">30d</button>
-          <button class="range-btn" data-days="90">90d</button>
+      </div>
+      <div class="chart-controls">
+        <div class="chart-controls-row">
+          <div class="chart-view-selector">
+            <button class="view-btn active" data-view="all">All Tags</button>
+            <button class="view-btn" data-view="date">By Date</button>
+            <button class="view-btn" data-view="tag">By Tag</button>
+          </div>
+          <div class="time-range-selector" id="timeRangeSelector">
+            <button class="range-btn active" data-days="7">7d</button>
+            <button class="range-btn" data-days="14">14d</button>
+            <button class="range-btn" data-days="30">30d</button>
+            <button class="range-btn" data-days="90">90d</button>
+          </div>
+        </div>
+        <div class="chart-controls-row" id="chartFilters" style="display: none;">
+          <select class="chart-filter-select" id="dateFilter"></select>
+          <select class="chart-filter-select" id="tagFilter"></select>
         </div>
       </div>
       <div class="chart-container"><canvas id="chart"></canvas></div>
@@ -1294,6 +1382,9 @@
     let currentTimeRange = 7;
     let hiddenTags = new Set();
     let selectedProfile = null;
+    let chartView = 'all'; // 'all', 'date', 'tag'
+    let selectedDate = null;
+    let selectedTag = null;
 
     // Google Drive
     let accessToken = null;
@@ -1590,10 +1681,56 @@
       document.getElementById('lowReading').textContent = low === Infinity ? '--' : low;
     }
 
+    function updateChartFilters() {
+      const dateFilter = document.getElementById('dateFilter');
+      const tagFilter = document.getElementById('tagFilter');
+      const filtersRow = document.getElementById('chartFilters');
+      const timeRangeSelector = document.getElementById('timeRangeSelector');
+
+      const dates = [...new Set(appData.readings.map(r => r.timestamp.split('T')[0]))].sort().reverse();
+      const tags = [...new Set(appData.readings.map(r => r.tag))];
+
+      dateFilter.innerHTML = dates.map(d => `<option value="${d}">${new Date(d).toLocaleDateString()}</option>`).join('');
+      tagFilter.innerHTML = tags.map(t => `<option value="${t}">${TAG_NAMES[t] || appData.customTags.find(ct => ct.id === t)?.name || t}</option>`).join('');
+
+      if (!selectedDate && dates.length) selectedDate = dates[0];
+      if (!selectedTag && tags.length) selectedTag = tags[0];
+
+      dateFilter.value = selectedDate || '';
+      tagFilter.value = selectedTag || '';
+
+      if (chartView === 'all') {
+        filtersRow.style.display = 'none';
+        timeRangeSelector.style.display = 'flex';
+      } else if (chartView === 'date') {
+        filtersRow.style.display = 'flex';
+        dateFilter.style.display = 'block';
+        tagFilter.style.display = 'none';
+        timeRangeSelector.style.display = 'none';
+      } else if (chartView === 'tag') {
+        filtersRow.style.display = 'flex';
+        dateFilter.style.display = 'none';
+        tagFilter.style.display = 'block';
+        timeRangeSelector.style.display = 'flex';
+      }
+    }
+
     function updateChart() {
       const canvas = document.getElementById('chart');
       const ctx = canvas.getContext('2d');
 
+      updateChartFilters();
+
+      if (chartView === 'all') {
+        renderAllTagsChart(canvas, ctx);
+      } else if (chartView === 'date') {
+        renderSingleDateChart(canvas, ctx);
+      } else if (chartView === 'tag') {
+        renderSingleTagChart(canvas, ctx);
+      }
+    }
+
+    function renderAllTagsChart(canvas, ctx) {
       const days = currentTimeRange;
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - days);
@@ -1601,20 +1738,12 @@
       const recentReadings = appData.readings.filter(r => new Date(r.timestamp) >= cutoff);
 
       if (recentReadings.length === 0) {
-        if (chart) {
-          chart.destroy();
-          chart = null;
-        }
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
-        document.getElementById('chartLegend').innerHTML = '';
+        renderEmptyChart(canvas, ctx);
         return;
       }
 
-      const usedTags = [...new Set(recentReadings.map(r => r.tag))].filter(t => !hiddenTags.has(t));
+      const allTags = [...new Set(recentReadings.map(r => r.tag))];
+      const usedTags = allTags.filter(t => !hiddenTags.has(t));
       
       const datasets = usedTags.map(tag => {
         const tagReadings = recentReadings.filter(r => r.tag === tag);
@@ -1649,14 +1778,10 @@
             legend: { display: false },
             tooltip: {
               callbacks: {
-                title: (items) => {
-                  return new Date(items[0].parsed.x).toLocaleString();
-                },
+                title: (items) => new Date(items[0].parsed.x).toLocaleString(),
                 label: (item) => {
-                  const reading = item.parsed.y;
-                  const notes = item.raw.notes;
-                  let label = `${item.dataset.label}: ${reading} mg/dL`;
-                  if (notes) label += ` - ${notes}`;
+                  let label = `${item.dataset.label}: ${item.parsed.y} mg/dL`;
+                  if (item.raw.notes) label += ` - ${item.raw.notes}`;
                   return label;
                 }
               }
@@ -1671,22 +1796,238 @@
             y: {
               beginAtZero: false,
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
-              ticks: {
-                callback: (value) => value + ' mg/dL'
-              }
+              ticks: { callback: (value) => value + ' mg/dL' }
             }
           }
         }
       });
 
-      updateChartLegend(usedTags);
+      updateChartLegend(allTags);
     }
 
-    function updateChartLegend(tags) {
+    function renderSingleDateChart(canvas, ctx) {
+      if (!selectedDate) {
+        renderEmptyChart(canvas, ctx);
+        return;
+      }
+
+      const dayReadings = appData.readings.filter(r => r.timestamp.startsWith(selectedDate));
+
+      if (dayReadings.length === 0) {
+        renderEmptyChart(canvas, ctx);
+        return;
+      }
+
+      const datasets = [];
+      const rangeAnnotations = [];
+
+      const data = dayReadings.map(r => {
+        const range = getRange(r.tag);
+        return {
+          x: new Date(r.timestamp),
+          y: r.reading,
+          notes: r.notes,
+          tag: r.tag,
+          low: range?.low,
+          high: range?.high
+        };
+      }).sort((a, b) => a.x - b.x);
+
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+      datasets.push({
+        label: 'Readings',
+        data: data,
+        borderColor: color,
+        backgroundColor: color,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        tension: 0.3
+      });
+
+      const allLows = data.filter(d => d.low).map(d => d.low);
+      const allHighs = data.filter(d => d.high).map(d => d.high);
+      const minLow = allLows.length ? Math.min(...allLows) : null;
+      const maxHigh = allHighs.length ? Math.max(...allHighs) : null;
+
+      if (minLow !== null) {
+        datasets.push({
+          label: 'Lower Bound',
+          data: data.map(d => ({ x: d.x, y: minLow })),
+          borderColor: 'rgba(124, 152, 133, 0.4)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+      }
+
+      if (maxHigh !== null) {
+        datasets.push({
+          label: 'Upper Bound',
+          data: data.map(d => ({ x: d.x, y: maxHigh })),
+          borderColor: 'rgba(196, 127, 127, 0.4)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+      }
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => new Date(items[0].parsed.x).toLocaleTimeString(),
+                label: (item) => {
+                  if (item.datasetIndex === 0) {
+                    const d = item.raw;
+                    const tagName = TAG_NAMES[d.tag] || appData.customTags.find(t => t.id === d.tag)?.name || d.tag;
+                    let label = `${tagName}: ${item.parsed.y} mg/dL`;
+                    if (d.notes) label += ` - ${d.notes}`;
+                    if (d.low && d.high) label += ` (range: ${d.low}-${d.high})`;
+                    return label;
+                  }
+                  return `${item.dataset.label}: ${item.parsed.y} mg/dL`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'hour', displayFormats: { hour: 'h:mm a' } },
+              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') }
+            },
+            y: {
+              beginAtZero: false,
+              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
+              ticks: { callback: (value) => value + ' mg/dL' }
+            }
+          }
+        }
+      });
+
+      document.getElementById('chartLegend').innerHTML = '';
+    }
+
+    function renderSingleTagChart(canvas, ctx) {
+      if (!selectedTag) {
+        renderEmptyChart(canvas, ctx);
+        return;
+      }
+
+      const days = currentTimeRange;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+
+      const tagReadings = appData.readings.filter(r => r.tag === selectedTag && new Date(r.timestamp) >= cutoff);
+
+      if (tagReadings.length === 0) {
+        renderEmptyChart(canvas, ctx);
+        return;
+      }
+
+      const range = getRange(selectedTag);
+      const color = TAG_COLORS[selectedTag] || '#9E9E9E';
+
+      const data = tagReadings.map(r => ({
+        x: new Date(r.timestamp),
+        y: r.reading,
+        notes: r.notes
+      })).sort((a, b) => a.x - b.x);
+
+      const datasets = [{
+        label: TAG_NAMES[selectedTag] || appData.customTags.find(t => t.id === selectedTag)?.name || selectedTag,
+        data: data,
+        borderColor: color,
+        backgroundColor: color,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.3
+      }];
+
+      if (range) {
+        datasets.push({
+          label: 'Lower Bound',
+          data: data.map(d => ({ x: d.x, y: range.low })),
+          borderColor: 'rgba(124, 152, 133, 0.5)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+        datasets.push({
+          label: 'Upper Bound',
+          data: data.map(d => ({ x: d.x, y: range.high })),
+          borderColor: 'rgba(196, 127, 127, 0.5)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+      }
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: (items) => new Date(items[0].parsed.x).toLocaleString(),
+                label: (item) => {
+                  let label = `${item.dataset.label}: ${item.parsed.y} mg/dL`;
+                  if (item.datasetIndex === 0 && item.raw.notes) label += ` - ${item.raw.notes}`;
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: days <= 7 ? 'day' : days <= 30 ? 'week' : 'month' },
+              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') }
+            },
+            y: {
+              beginAtZero: false,
+              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
+              ticks: { callback: (value) => value + ' mg/dL' }
+            }
+          }
+        }
+      });
+
+      document.getElementById('chartLegend').innerHTML = '';
+    }
+
+    function renderEmptyChart(canvas, ctx) {
+      if (chart) {
+        chart.destroy();
+        chart = null;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
+      document.getElementById('chartLegend').innerHTML = '';
+    }
+
+    function updateChartLegend(allTags) {
       const legend = document.getElementById('chartLegend');
       legend.innerHTML = '';
 
-      tags.forEach(tag => {
+      allTags.forEach(tag => {
         const color = TAG_COLORS[tag] || '#9E9E9E';
         const name = TAG_NAMES[tag] || appData.customTags.find(t => t.id === tag)?.name || tag;
         const isHidden = hiddenTags.has(tag);
@@ -1706,6 +2047,17 @@
         });
         legend.appendChild(item);
       });
+
+      if (hiddenTags.size > 0) {
+        const resetLink = document.createElement('span');
+        resetLink.className = 'legend-reset';
+        resetLink.textContent = 'Show All';
+        resetLink.addEventListener('click', () => {
+          hiddenTags.clear();
+          updateChart();
+        });
+        legend.appendChild(resetLink);
+      }
     }
 
     function toggleTag(tag) {
@@ -1995,6 +2347,25 @@
           updateInsights();
           updateChart();
         });
+      });
+
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          chartView = btn.dataset.view;
+          updateChart();
+        });
+      });
+
+      document.getElementById('dateFilter').addEventListener('change', (e) => {
+        selectedDate = e.target.value;
+        updateChart();
+      });
+
+      document.getElementById('tagFilter').addEventListener('change', (e) => {
+        selectedTag = e.target.value;
+        updateChart();
       });
 
       document.getElementById('chartLegend').addEventListener('change', (e) => {
