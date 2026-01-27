@@ -1,0 +1,40 @@
+{
+  "profile": {
+    "name": "Sample User",
+    "email": "sample@example.com"
+  },
+  "readings": [
+    {"id": "1737849600000", "timestamp": "2026-01-26T07:00:00.000Z", "tag": "fasting", "reading": 95, "notes": ""},
+    {"id": "1737853200000", "timestamp": "2026-01-26T08:00:00.000Z", "tag": "after-breakfast", "reading": 142, "notes": "Had oatmeal"},
+    {"id": "1737871200000", "timestamp": "2026-01-26T13:00:00.000Z", "tag": "after-lunch", "reading": 138, "notes": ""},
+    {"id": "1737889200000", "timestamp": "2026-01-26T18:00:00.000Z", "tag": "after-dinner", "reading": 155, "notes": ""},
+    {"id": "1737763200000", "timestamp": "2026-01-25T07:00:00.000Z", "tag": "fasting", "reading": 102, "notes": ""},
+    {"id": "1737766800000", "timestamp": "2026-01-25T08:00:00.000Z", "tag": "after-breakfast", "reading": 158, "notes": ""},
+    {"id": "1737784800000", "timestamp": "2026-01-25T13:00:00.000Z", "tag": "after-lunch", "reading": 145, "notes": ""},
+    {"id": "1737802800000", "timestamp": "2026-01-25T18:00:00.000Z", "tag": "after-dinner", "reading": 162, "notes": ""},
+    {"id": "1737676800000", "timestamp": "2026-01-24T07:00:00.000Z", "tag": "fasting", "reading": 89, "notes": "Good morning"},
+    {"id": "1737680400000", "timestamp": "2026-01-24T08:00:00.000Z", "tag": "after-breakfast", "reading": 135, "notes": ""},
+    {"id": "1737698400000", "timestamp": "2026-01-24T13:00:00.000Z", "tag": "after-lunch", "reading": 129, "notes": "Light salad"},
+    {"id": "1737716400000", "timestamp": "2026-01-24T18:00:00.000Z", "tag": "after-dinner", "reading": 148, "notes": ""},
+    {"id": "1737590400000", "timestamp": "2026-01-23T07:00:00.000Z", "tag": "fasting", "reading": 98, "notes": ""},
+    {"id": "1737594000000", "timestamp": "2026-01-23T08:00:00.000Z", "tag": "after-breakfast", "reading": 165, "notes": "Pancakes"},
+    {"id": "1737612000000", "timestamp": "2026-01-23T13:00:00.000Z", "tag": "after-lunch", "reading": 152, "notes": ""},
+    {"id": "1737630000000", "timestamp": "2026-01-23T18:00:00.000Z", "tag": "after-dinner", "reading": 171, "notes": ""},
+    {"id": "1737504000000", "timestamp": "2026-01-22T07:00:00.000Z", "tag": "fasting", "reading": 91, "notes": ""},
+    {"id": "1737507600000", "timestamp": "2026-01-22T08:00:00.000Z", "tag": "after-breakfast", "reading": 139, "notes": ""},
+    {"id": "1737525600000", "timestamp": "2026-01-22T13:00:00.000Z", "tag": "after-lunch", "reading": 133, "notes": ""},
+    {"id": "1737543600000", "timestamp": "2026-01-22T18:00:00.000Z", "tag": "after-dinner", "reading": 156, "notes": ""},
+    {"id": "1737417600000", "timestamp": "2026-01-21T07:00:00.000Z", "tag": "fasting", "reading": 105, "notes": "Slept poorly"},
+    {"id": "1737421200000", "timestamp": "2026-01-21T08:00:00.000Z", "tag": "after-breakfast", "reading": 172, "notes": ""},
+    {"id": "1737439200000", "timestamp": "2026-01-21T13:00:00.000Z", "tag": "after-lunch", "reading": 148, "notes": ""},
+    {"id": "1737457200000", "timestamp": "2026-01-21T18:00:00.000Z", "tag": "after-dinner", "reading": 168, "notes": ""},
+    {"id": "1737331200000", "timestamp": "2026-01-20T07:00:00.000Z", "tag": "fasting", "reading": 88, "notes": ""},
+    {"id": "1737334800000", "timestamp": "2026-01-20T08:00:00.000Z", "tag": "after-breakfast", "reading": 128, "notes": "Eggs only"},
+    {"id": "1737352800000", "timestamp": "2026-01-20T13:00:00.000Z", "tag": "after-lunch", "reading": 122, "notes": ""},
+    {"id": "1737370800000", "timestamp": "2026-01-20T18:00:00.000Z", "tag": "after-dinner", "reading": 145, "notes": ""},
+    {"id": "1737244800000", "timestamp": "2026-01-19T07:00:00.000Z", "tag": "fasting", "reading": 94, "notes": ""},
+    {"id": "1737248400000", "timestamp": "2026-01-19T08:00:00.000Z", "tag": "after-breakfast", "reading": 151, "notes": ""},
+    {"id": "1737266400000", "timestamp": "2026-01-19T13:00:00.000Z", "tag": "after-lunch", "reading": 141, "notes": ""}
+  ],
+  "customTags": []
+}

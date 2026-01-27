@@ -1600,7 +1600,11 @@
       const recentReadings = appData.readings.filter(r => new Date(r.timestamp) >= cutoff);
 
       if (recentReadings.length === 0) {
-        if (chart) chart.destroy();
+        if (chart) {
+          chart.destroy();
+          chart = null;
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
         ctx.font = '16px sans-serif';
         ctx.textAlign = 'center';
