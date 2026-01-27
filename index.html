@@ -1955,18 +1955,16 @@
         tension: 0.3
       });
 
-      const allLows = data.filter(d => d.low).map(d => d.low);
-      const allHighs = data.filter(d => d.high).map(d => d.high);
-      const minLow = allLows.length ? Math.min(...allLows) : null;
-      const maxHigh = allHighs.length ? Math.max(...allHighs) : null;
-
-      if (minLow !== null && maxHigh !== null) {
+      const dataWithRanges = data.filter(d => d.low != null && d.high != null);
+      
+      if (dataWithRanges.length > 0) {
         datasets.push({
-          label: 'Target Range',
-          data: data.map(d => ({ x: d.x, y: minLow })),
+          label: 'Lower Bound',
+          data: dataWithRanges.map(d => ({ x: d.x, y: d.low })),
           borderColor: 'rgba(124, 152, 133, 0.4)',
           borderDash: [5, 5],
           pointRadius: 0,
+          tension: 0,
           fill: {
             target: '+1',
             above: 'rgba(124, 152, 133, 0.15)',
@@ -1975,28 +1973,11 @@
         });
         datasets.push({
           label: 'Upper Bound',
-          data: data.map(d => ({ x: d.x, y: maxHigh })),
+          data: dataWithRanges.map(d => ({ x: d.x, y: d.high })),
           borderColor: 'rgba(124, 152, 133, 0.4)',
           borderDash: [5, 5],
           pointRadius: 0,
-          fill: false
-        });
-      } else if (minLow !== null) {
-        datasets.push({
-          label: 'Lower Bound',
-          data: data.map(d => ({ x: d.x, y: minLow })),
-          borderColor: 'rgba(124, 152, 133, 0.4)',
-          borderDash: [5, 5],
-          pointRadius: 0,
-          fill: false
-        });
-      } else if (maxHigh !== null) {
-        datasets.push({
-          label: 'Upper Bound',
-          data: data.map(d => ({ x: d.x, y: maxHigh })),
-          borderColor: 'rgba(124, 152, 133, 0.4)',
-          borderDash: [5, 5],
-          pointRadius: 0,
+          tension: 0,
           fill: false
         });
       }
