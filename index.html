@@ -933,6 +933,93 @@
       line-height: 1.6;
     }
 
+    /* Target Ranges */
+    .range-item {
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    .range-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .range-item-name {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.9em;
+    }
+
+    .range-item-badge {
+      font-size: 0.75em;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    .range-item-inputs {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .range-item-inputs input {
+      width: 70px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 0.85em;
+      text-align: center;
+    }
+
+    .range-item-inputs span {
+      color: var(--text-muted);
+      font-size: 0.85em;
+    }
+
+    .range-item-actions {
+      display: flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+
+    .range-btn {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.75em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .range-btn-save {
+      background: var(--primary);
+      color: white;
+    }
+
+    .range-btn-save:hover {
+      background: var(--primary-dark);
+    }
+
+    .range-btn-reset {
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .range-btn-reset:hover {
+      background: var(--danger);
+      color: white;
+      border-color: var(--danger);
+    }
+
     /* Sync Modal */
     .sync-status {
       text-align: center;
@@ -1300,6 +1387,12 @@
           <span class="setting-label">Custom Tags</span>
           <div id="customTagsList"></div>
         </div>
+
+        <div class="setting-item">
+          <span class="setting-label">Target Ranges</span>
+          <p class="setting-description">Customize blood sugar target ranges for each tag</p>
+          <div id="targetRangesList"></div>
+        </div>
       </div>
 
       <button class="btn-primary" onclick="closeSettingsModal()">Close</button>
@@ -1411,7 +1504,8 @@
     let appData = {
       profile: null,
       readings: [],
-      customTags: []
+      customTags: [],
+      customRanges: {}
     };
     let chart = null;
     let currentTimeRange = 7;
@@ -1473,6 +1567,7 @@
         if (saved) {
           appData = JSON.parse(saved);
           if (!appData.customTags) appData.customTags = [];
+          if (!appData.customRanges) appData.customRanges = {};
         }
       } catch (error) {
         console.error('Error loading data:', error);
@@ -2355,11 +2450,38 @@
     }
 
     function getRange(tag) {
+      // Check user-customized ranges first
+      if (appData.customRanges && appData.customRanges[tag]) {
+        return appData.customRanges[tag];
+      }
+      // Then check custom tags
       if (tag.startsWith('custom-')) {
         const customTag = appData.customTags.find(t => t.id === tag);
         return customTag ? customTag.range : null;
       }
+      // Fall back to profile defaults
       return RANGES[appData.profile]?.[tag];
+    }
+
+    function getDefaultRange(tag) {
+      if (tag.startsWith('custom-')) {
+        const customTag = appData.customTags.find(t => t.id === tag);
+        return customTag ? customTag.range : { low: 70, high: 140 };
+      }
+      return RANGES[appData.profile]?.[tag] || { low: 70, high: 140 };
+    }
+
+    function saveCustomRange(tag, low, high) {
+      appData.customRanges[tag] = { low: parseFloat(low), high: parseFloat(high) };
+      saveData();
+      updateUI();
+    }
+
+    function resetRangeToDefault(tag) {
+      delete appData.customRanges[tag];
+      saveData();
+      showSettingsModal(); // Refresh the settings UI
+      updateUI();
     }
 
     function deleteReading(id) {
@@ -2385,8 +2507,64 @@
           </div>
         `).join('');
       }
+
+      // Render target ranges for all tags
+      renderTargetRanges();
       
       document.getElementById('settingsModal').classList.add('show');
+    }
+
+    function renderTargetRanges() {
+      const container = document.getElementById('targetRangesList');
+      
+      // Get all built-in tags
+      const builtInTags = Object.keys(TAG_NAMES);
+      
+      // Get all custom tags
+      const customTagIds = appData.customTags.map(t => t.id);
+      
+      // Combine all tags
+      const allTags = [...builtInTags, ...customTagIds];
+      
+      container.innerHTML = allTags.map(tag => {
+        const tagName = TAG_NAMES[tag] || appData.customTags.find(t => t.id === tag)?.name || tag;
+        const currentRange = getRange(tag) || { low: 70, high: 140 };
+        const defaultRange = getDefaultRange(tag);
+        const isCustomized = appData.customRanges && appData.customRanges[tag];
+        const isCustomTag = tag.startsWith('custom-');
+        
+        return `
+          <div class="range-item" data-tag="${tag}">
+            <div class="range-item-header">
+              <span class="range-item-name">${tagName}</span>
+              ${isCustomized ? '<span class="range-item-badge">Custom</span>' : ''}
+            </div>
+            <div class="range-item-inputs">
+              <input type="number" id="range-low-${tag}" value="${currentRange.low}" min="0" max="500">
+              <span>to</span>
+              <input type="number" id="range-high-${tag}" value="${currentRange.high}" min="0" max="500">
+              <span>mg/dL</span>
+              <div class="range-item-actions">
+                <button class="range-btn range-btn-save" onclick="saveRangeFromInput('${tag}')">Save</button>
+                ${isCustomized ? `<button class="range-btn range-btn-reset" onclick="resetRangeToDefault('${tag}')" title="Reset to ${defaultRange.low}-${defaultRange.high}">Reset</button>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveRangeFromInput(tag) {
+      const low = document.getElementById(`range-low-${tag}`).value;
+      const high = document.getElementById(`range-high-${tag}`).value;
+      
+      if (parseFloat(low) >= parseFloat(high)) {
+        alert('Low value must be less than high value');
+        return;
+      }
+      
+      saveCustomRange(tag, low, high);
+      renderTargetRanges(); // Refresh to show badge
     }
 
     function closeSettingsModal() {
