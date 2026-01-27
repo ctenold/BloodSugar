@@ -1965,7 +1965,25 @@
       const minLow = allLows.length ? Math.min(...allLows) : null;
       const maxHigh = allHighs.length ? Math.max(...allHighs) : null;
 
-      if (minLow !== null) {
+      if (minLow !== null && maxHigh !== null) {
+        datasets.push({
+          label: 'Lower Bound',
+          data: data.map(d => ({ x: d.x, y: minLow })),
+          borderColor: 'rgba(124, 152, 133, 0.4)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: '+1',
+          backgroundColor: 'rgba(124, 152, 133, 0.15)'
+        });
+        datasets.push({
+          label: 'Upper Bound',
+          data: data.map(d => ({ x: d.x, y: maxHigh })),
+          borderColor: 'rgba(124, 152, 133, 0.4)',
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        });
+      } else if (minLow !== null) {
         datasets.push({
           label: 'Lower Bound',
           data: data.map(d => ({ x: d.x, y: minLow })),
@@ -1974,13 +1992,11 @@
           pointRadius: 0,
           fill: false
         });
-      }
-
-      if (maxHigh !== null) {
+      } else if (maxHigh !== null) {
         datasets.push({
           label: 'Upper Bound',
           data: data.map(d => ({ x: d.x, y: maxHigh })),
-          borderColor: 'rgba(196, 127, 127, 0.4)',
+          borderColor: 'rgba(124, 152, 133, 0.4)',
           borderDash: [5, 5],
           pointRadius: 0,
           fill: false
@@ -2077,12 +2093,13 @@
           borderColor: 'rgba(124, 152, 133, 0.5)',
           borderDash: [5, 5],
           pointRadius: 0,
-          fill: false
+          fill: '+1',
+          backgroundColor: 'rgba(124, 152, 133, 0.15)'
         });
         datasets.push({
           label: 'Upper Bound',
           data: data.map(d => ({ x: d.x, y: range.high })),
-          borderColor: 'rgba(196, 127, 127, 0.5)',
+          borderColor: 'rgba(124, 152, 133, 0.5)',
           borderDash: [5, 5],
           pointRadius: 0,
           fill: false
