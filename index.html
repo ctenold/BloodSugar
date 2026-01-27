@@ -1419,6 +1419,7 @@
     function init() {
       initTheme();
       loadData();
+      loadChartState();
       setupEventListeners();
       setCurrentDateTime();
       displayVerse();
@@ -1473,6 +1474,47 @@
       } catch (error) {
         console.error('Error saving data:', error);
       }
+    }
+
+    function saveChartState() {
+      try {
+        const state = {
+          currentTimeRange,
+          hiddenTags: Array.from(hiddenTags),
+          selectedTag,
+          chartView
+        };
+        localStorage.setItem('blood-sugar-chart-state', JSON.stringify(state));
+      } catch (error) {
+        console.error('Error saving chart state:', error);
+      }
+    }
+
+    function loadChartState() {
+      try {
+        const saved = localStorage.getItem('blood-sugar-chart-state');
+        if (saved) {
+          const state = JSON.parse(saved);
+          currentTimeRange = state.currentTimeRange || 7;
+          hiddenTags = new Set(state.hiddenTags || []);
+          selectedTag = state.selectedTag || null;
+          chartView = state.chartView || 'all';
+        }
+      } catch (error) {
+        console.error('Error loading chart state:', error);
+      }
+    }
+
+    function syncChartStateUI() {
+      // Set range buttons
+      document.querySelectorAll('.range-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.days) === currentTimeRange);
+      });
+      
+      // Set view buttons
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === chartView);
+      });
     }
 
     // Profile Management
@@ -1688,6 +1730,7 @@
 
     // UI Updates
     function updateUI() {
+      syncChartStateUI();
       updateTodayWidget();
       updateInsights();
       updateChart();
@@ -2207,6 +2250,7 @@
       } else {
         hiddenTags.add(tag);
       }
+      saveChartState();
       updateChart();
     }
 
@@ -2523,6 +2567,7 @@
           document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           currentTimeRange = parseInt(btn.dataset.days);
+          saveChartState();
           updateInsights();
           updateChart();
         });
@@ -2533,6 +2578,7 @@
           document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           chartView = btn.dataset.view;
+          saveChartState();
           updateChart();
         });
       });
@@ -2544,6 +2590,7 @@
 
       document.getElementById('tagFilter').addEventListener('change', (e) => {
         selectedTag = e.target.value;
+        saveChartState();
         updateChart();
       });
 
