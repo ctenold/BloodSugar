@@ -1,8 +1,5 @@
 {
-  "profile": {
-    "name": "Sample User",
-    "email": "sample@example.com"
-  },
+  "profile": "pregnant",
   "readings": [
     {"id": "1737244800000", "timestamp": "2026-01-19T07:00:00.000Z", "tag": "morning-fasting", "reading": 95, "notes": ""},
     {"id": "1737248400000", "timestamp": "2026-01-19T12:00:00.000Z", "tag": "pre-lunch", "reading": 105, "notes": ""},

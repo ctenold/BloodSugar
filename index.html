@@ -399,7 +399,7 @@
       cursor: pointer;
     }
 
-    .tag-indicator:hover {
+    .tag-indicator:hover:not(.logged) {
       border-color: var(--primary-light);
       background: var(--bg-card);
       transform: translateY(-1px);
@@ -409,6 +409,8 @@
       background: var(--in-range);
       border-color: var(--primary-light);
       color: var(--primary-dark);
+      cursor: default;
+      opacity: 0.7;
     }
 
     .tag-dot {
@@ -1235,7 +1237,12 @@
 
     <!-- Recent Readings -->
     <div class="recent-section" id="recentSection">
-      <h3>Recent Readings</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 0;">Recent Readings</h3>
+        <select id="recentTagFilter" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; font-size: 0.95em;">
+          <option value="all">All Tags</option>
+        </select>
+      </div>
       <div id="recentReadings"></div>
     </div>
   </div>
@@ -1401,6 +1408,8 @@
     let chartView = 'all'; // 'all', 'date', 'tag'
     let selectedDate = null;
     let selectedTag = null;
+    let recentReadingsFilter = 'all'; // filter by tag for recent readings
+    let highlightedReadingId = null; // track clicked reading to always show it
 
     // Google Drive
     let accessToken = null;
@@ -1682,6 +1691,7 @@
       updateTodayWidget();
       updateInsights();
       updateChart();
+      updateRecentReadingsFilter();
       updateRecentReadings();
     }
 
@@ -1712,8 +1722,12 @@
           <span class="tag-dot"></span>
           <span>${tagName}</span>
         `;
-        indicator.addEventListener('click', () => quickAddReading(tag));
-        indicator.title = isLogged ? 'Add another reading' : 'Click to add reading';
+        if (!isLogged) {
+          indicator.addEventListener('click', () => quickAddReading(tag));
+          indicator.title = 'Click to add reading';
+        } else {
+          indicator.title = 'Already logged today';
+        }
         indicators.appendChild(indicator);
       });
     }
@@ -1907,11 +1921,16 @@
     }
 
     function scrollToReading(readingId) {
+      highlightedReadingId = readingId;
+      updateRecentReadings(); // Re-render to include highlighted reading if filtered
       const readingElement = document.querySelector(`[data-reading-id="${readingId}"]`);
       if (readingElement) {
         readingElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         readingElement.classList.add('highlight');
-        setTimeout(() => readingElement.classList.remove('highlight'), 2000);
+        setTimeout(() => {
+          readingElement.classList.remove('highlight');
+          highlightedReadingId = null;
+        }, 2000);
       }
     }
 
@@ -2191,11 +2210,48 @@
       updateChart();
     }
 
+    function updateRecentReadingsFilter() {
+      const filterSelect = document.getElementById('recentTagFilter');
+      const usedTags = [...new Set(appData.readings.map(r => r.tag))].sort();
+      
+      // Preserve current selection
+      const currentValue = filterSelect.value;
+      
+      // Clear existing options except "All Tags"
+      filterSelect.innerHTML = '<option value="all">All Tags</option>';
+      
+      // Add options for each tag
+      usedTags.forEach(tag => {
+        const tagName = TAG_NAMES[tag] || appData.customTags.find(t => t.id === tag)?.name || tag;
+        const option = document.createElement('option');
+        option.value = tag;
+        option.textContent = tagName;
+        filterSelect.appendChild(option);
+      });
+      
+      // Restore previous selection if it still exists
+      if ([...filterSelect.options].some(o => o.value === currentValue)) {
+        filterSelect.value = currentValue;
+      }
+    }
+
     function updateRecentReadings() {
       const container = document.getElementById('recentReadings');
-      const recent = [...appData.readings].sort((a, b) => 
+      let recent = [...appData.readings].sort((a, b) => 
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 10);
+
+      // Filter by tag if filter is set
+      if (recentReadingsFilter !== 'all') {
+        recent = recent.filter(r => r.tag === recentReadingsFilter);
+        // Always include highlighted reading even if filtered out
+        if (highlightedReadingId) {
+          const highlightedReading = appData.readings.find(r => r.id === highlightedReadingId);
+          if (highlightedReading && !recent.find(r => r.id === highlightedReadingId)) {
+            recent.unshift(highlightedReading);
+          }
+        }
+      }
 
       if (recent.length === 0) {
         container.innerHTML = `
@@ -2489,6 +2545,11 @@
       document.getElementById('tagFilter').addEventListener('change', (e) => {
         selectedTag = e.target.value;
         updateChart();
+      });
+
+      document.getElementById('recentTagFilter').addEventListener('change', (e) => {
+        recentReadingsFilter = e.target.value;
+        updateRecentReadings();
       });
 
       document.getElementById('chartLegend').addEventListener('change', (e) => {
