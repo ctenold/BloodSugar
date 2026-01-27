@@ -1956,6 +1956,7 @@
       });
 
       const dataWithRanges = data.filter(d => d.low != null && d.high != null);
+      console.log('Daily chart debug:', { profile: appData.profile, dataCount: data.length, withRanges: dataWithRanges.length, sampleData: data[0] });
       
       if (dataWithRanges.length > 0) {
         datasets.push({
@@ -2047,6 +2048,7 @@
       }
 
       const range = getRange(selectedTag);
+      console.log('Single tag chart debug:', { profile: appData.profile, selectedTag, range });
       const color = TAG_COLORS[selectedTag] || '#9E9E9E';
 
       const data = tagReadings.map(r => ({
