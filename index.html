@@ -1833,9 +1833,17 @@
         <div class="setting-item">
           <span class="setting-label">Data Management</span>
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-            <button class="btn-secondary" onclick="downloadData()">Download Data</button>
-            <button class="btn-secondary" onclick="document.getElementById('uploadInput').click()">Upload Data</button>
-            <input type="file" id="uploadInput" accept=".json" style="display: none;" onchange="uploadData(event)">
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-secondary" style="flex: 1;" onclick="downloadDataJSON()">Export JSON</button>
+              <button class="btn-secondary" style="flex: 1;" onclick="downloadDataCSV()">Export CSV</button>
+            </div>
+            <p class="setting-description" style="margin: 4px 0;">JSON = full backup (settings + readings). CSV = readings only (Excel-friendly).</p>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputJSON').click()">Import JSON</button>
+              <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputCSV').click()">Import CSV</button>
+            </div>
+            <input type="file" id="uploadInputJSON" accept=".json" style="display: none;" onchange="uploadDataJSON(event)">
+            <input type="file" id="uploadInputCSV" accept=".csv" style="display: none;" onchange="uploadDataCSV(event)">
             <button class="btn-secondary" onclick="openSyncModal()">Sync with Google Drive</button>
           </div>
         </div>
@@ -3390,18 +3398,44 @@
     });
 
     // Data Export/Import
-    function downloadData() {
+    function downloadDataJSON() {
       const dataStr = JSON.stringify(appData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `blood-sugar-data-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `glucose-journal-backup-${new Date().toISOString().split('T')[0]}.json`;
       link.click();
       URL.revokeObjectURL(url);
     }
 
-    function uploadData(event) {
+    function downloadDataCSV() {
+      if (!appData.readings || appData.readings.length === 0) {
+        alert('No readings to export');
+        return;
+      }
+      const headers = ['Date', 'Time', 'Reading (mg/dL)', 'Tag', 'Notes'];
+      const rows = appData.readings
+        .slice()
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+        .map(r => {
+          const dt = new Date(r.timestamp);
+          const date = dt.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+          const notes = (r.notes || '').replace(/"/g, '""');
+          return `"${date}","${time}","${r.reading}","${r.tag}","${notes}"`;
+        });
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `glucose-readings-${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function uploadDataJSON(event) {
       const file = event.target.files[0];
       if (!file) return;
 
@@ -3410,10 +3444,10 @@
         try {
           const data = JSON.parse(e.target.result);
           if (!data.profile || !data.readings) {
-            alert('Invalid data file');
+            alert('Invalid data file. JSON must contain profile and readings.');
             return;
           }
-          if (confirm('This will replace all current data. Continue?')) {
+          if (confirm('This will replace all current data including settings. Continue?')) {
             appData = data;
             if (!appData.customTags) appData.customTags = [];
             saveData();
@@ -3426,6 +3460,141 @@
       };
       reader.readAsText(file);
       event.target.value = '';
+    }
+
+    function uploadDataCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const lines = e.target.result.trim().split('\n');
+          if (lines.length < 2) {
+            alert('CSV file is empty or has no data rows');
+            return;
+          }
+          
+          const header = lines[0].toLowerCase();
+          const hasHeader = header.includes('date') || header.includes('reading') || header.includes('time');
+          const dataLines = hasHeader ? lines.slice(1) : lines;
+          
+          const newReadings = [];
+          const errors = [];
+          
+          dataLines.forEach((line, idx) => {
+            if (!line.trim()) return;
+            
+            const cols = parseCSVLine(line);
+            if (cols.length < 3) {
+              errors.push(`Row ${idx + 1}: Not enough columns`);
+              return;
+            }
+            
+            const dateStr = cols[0]?.trim();
+            const timeStr = cols[1]?.trim();
+            const readingStr = cols[2]?.trim();
+            const tag = cols[3]?.trim() || 'other';
+            const notes = cols[4]?.trim() || '';
+            
+            const reading = parseInt(readingStr, 10);
+            if (isNaN(reading) || reading < 20 || reading > 600) {
+              errors.push(`Row ${idx + 1}: Invalid reading value "${readingStr}"`);
+              return;
+            }
+            
+            const timestamp = parseDateTime(dateStr, timeStr);
+            if (!timestamp) {
+              errors.push(`Row ${idx + 1}: Could not parse date/time "${dateStr} ${timeStr}"`);
+              return;
+            }
+            
+            newReadings.push({
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+              timestamp: timestamp.toISOString(),
+              reading: reading,
+              tag: tag,
+              notes: notes
+            });
+          });
+          
+          if (newReadings.length === 0) {
+            alert('No valid readings found in CSV.\n\n' + errors.slice(0, 5).join('\n'));
+            return;
+          }
+          
+          const action = confirm(
+            `Found ${newReadings.length} readings to import.\n\n` +
+            (errors.length > 0 ? `${errors.length} rows had errors.\n\n` : '') +
+            'Choose OK to ADD to existing readings, or Cancel to abort.\n\n' +
+            '(To replace all data, use JSON import instead.)'
+          );
+          
+          if (action) {
+            appData.readings = [...appData.readings, ...newReadings];
+            saveData();
+            updateUI();
+            alert(`Imported ${newReadings.length} readings successfully!`);
+          }
+        } catch (error) {
+          alert('Error reading CSV: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function parseDateTime(dateStr, timeStr) {
+      const combined = `${dateStr} ${timeStr}`;
+      let date = new Date(combined);
+      if (!isNaN(date.getTime())) return date;
+      
+      const mdyMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if (mdyMatch) {
+        let [, m, d, y] = mdyMatch;
+        if (y.length === 2) y = '20' + y;
+        const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+        if (timeMatch) {
+          let [, h, min, ampm] = timeMatch;
+          h = parseInt(h, 10);
+          if (ampm) {
+            if (ampm.toLowerCase() === 'pm' && h !== 12) h += 12;
+            if (ampm.toLowerCase() === 'am' && h === 12) h = 0;
+          }
+          date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), h, parseInt(min));
+          if (!isNaN(date.getTime())) return date;
+        }
+      }
+      
+      const isoDate = new Date(dateStr + 'T' + timeStr);
+      if (!isNaN(isoDate.getTime())) return isoDate;
+      
+      return null;
     }
 
     // Google Drive Sync
