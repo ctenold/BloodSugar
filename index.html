@@ -541,6 +541,7 @@
       cursor: pointer;
       font-size: 0.95em;
       font-weight: 600;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       transition: all 0.3s ease;
       box-shadow: 0 4px 12px rgba(124, 152, 133, 0.3);
     }
@@ -695,6 +696,7 @@
       border-radius: 14px;
       font-size: 1em;
       font-weight: 600;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 16px rgba(124, 152, 133, 0.3);
@@ -715,6 +717,7 @@
       border-radius: 14px;
       font-size: 0.95em;
       font-weight: 500;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
       transition: all 0.3s ease;
       margin-top: 12px;
@@ -782,6 +785,7 @@
       color: var(--text-secondary);
       font-size: 0.8em;
       font-weight: 500;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -813,6 +817,7 @@
       color: var(--text-secondary);
       font-size: 0.85em;
       font-weight: 500;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -835,6 +840,7 @@
       border-radius: 10px;
       color: var(--text-primary);
       font-size: 0.85em;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
     }
 
@@ -862,6 +868,7 @@
 
     .legend-reset {
       font-size: 0.8em;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       color: var(--primary);
       cursor: pointer;
       margin-left: auto;
@@ -903,6 +910,7 @@
 
     .legend-label {
       font-size: 0.85em;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       color: var(--text-secondary);
     }
 
@@ -1095,6 +1103,7 @@
       color: var(--text-secondary);
       font-size: 0.95em;
       font-weight: 500;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: center;
@@ -1245,6 +1254,12 @@
       border-bottom: none;
     }
 
+    .setting-item .btn-secondary {
+      padding: 10px 16px;
+      margin-top: 8px;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
     .setting-label {
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-weight: 500;
@@ -1294,7 +1309,6 @@
       display: flex;
       gap: 8px;
       align-items: center;
-      flex-wrap: nowrap;
     }
 
     .range-item-inputs input {
@@ -1316,7 +1330,7 @@
     .range-item-actions {
       display: flex;
       gap: 6px;
-      margin-left: auto;
+      align-items: center;
     }
 
     .range-btn {
@@ -2468,7 +2482,7 @@
       }
     }
 
-    Chart.defaults.font.family = "'Nunito', sans-serif";
+    Chart.defaults.font.family = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";
     Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#5d7a66';
 
     function updateChart() {
@@ -3246,17 +3260,17 @@
           <div class="range-item" data-tag="${tag}">
             <div class="range-item-header">
               <span class="range-item-name">${tagName}</span>
-              ${isCustomized ? '<span class="range-item-badge">Custom</span>' : ''}
+              <div class="range-item-actions">
+                ${isCustomized ? '<span class="range-item-badge">Custom</span>' : ''}
+                <button class="range-btn range-btn-save" onclick="saveRangeFromInput('${tag}')">Save</button>
+                ${isCustomized ? `<button class="range-btn range-btn-reset" onclick="resetRangeToDefault('${tag}')" title="Reset to ${defaultRange.low}-${defaultRange.high}">Reset</button>` : ''}
+              </div>
             </div>
             <div class="range-item-inputs">
               <input type="number" id="range-low-${tag}" value="${currentRange.low}" min="0" max="500">
               <span>to</span>
               <input type="number" id="range-high-${tag}" value="${currentRange.high}" min="0" max="500">
               <span>mg/dL</span>
-              <div class="range-item-actions">
-                <button class="range-btn range-btn-save" onclick="saveRangeFromInput('${tag}')">Save</button>
-                ${isCustomized ? `<button class="range-btn range-btn-reset" onclick="resetRangeToDefault('${tag}')" title="Reset to ${defaultRange.low}-${defaultRange.high}">Reset</button>` : ''}
-              </div>
             </div>
           </div>
         `;
