@@ -961,11 +961,18 @@
       align-items: center;
       transition: all 0.2s ease;
       border: 1px solid transparent;
+      cursor: pointer;
     }
 
     .reading-item:hover {
       border-color: var(--border-color);
       background: var(--bg-card);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
+    .reading-item:active {
+      transform: translateY(0);
     }
 
     .reading-item.highlight {
@@ -1029,16 +1036,145 @@
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 1.1em;
+      font-size: 1em;
       cursor: pointer;
       padding: 10px;
       border-radius: 10px;
       transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .delete-btn:hover {
-      color: var(--danger);
-      background: var(--danger-zone);
+      color: var(--primary-dark);
+      background: var(--accent-sage);
+    }
+
+    .delete-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .view-all-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-size: 0.95em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .view-all-btn:hover {
+      background: var(--bg-card);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Full Log Modal */
+    .full-log-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+
+    .full-log-modal.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .full-log-header {
+      position: sticky;
+      top: 0;
+      background: var(--bg-primary);
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 10;
+    }
+
+    .full-log-header h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.5em;
+      font-weight: 500;
+    }
+
+    .full-log-close {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.2s ease;
+    }
+
+    .full-log-close:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .full-log-content {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .full-log-filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .full-log-filters select,
+    .full-log-filters input {
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.95em;
+    }
+
+    .log-date-group {
+      margin-bottom: 24px;
+    }
+
+    .log-date-header {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.2em;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
     }
 
     /* Settings */
@@ -1492,6 +1628,7 @@
         </select>
       </div>
       <div id="recentReadings"></div>
+      <button class="view-all-btn" id="viewAllBtn" onclick="showFullLog()">View All Readings</button>
     </div>
   </div>
 
@@ -1658,6 +1795,56 @@
       </div>
 
       <button class="btn-primary" onclick="closeSettingsModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Edit Reading Modal -->
+  <div class="modal" id="editReadingModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Reading</h2>
+        <p>Update your blood sugar entry</p>
+      </div>
+      <form id="editReadingForm">
+        <input type="hidden" id="editReadingId">
+        <div class="form-group">
+          <label for="editTimestamp">Time</label>
+          <input type="datetime-local" id="editTimestamp" required>
+        </div>
+        <div class="form-group">
+          <label for="editTag">Tag</label>
+          <select id="editTag" required></select>
+        </div>
+        <div class="form-group">
+          <label for="editReading">Blood Sugar (mg/dL)</label>
+          <input type="number" id="editReading" step="1" min="0" required>
+        </div>
+        <div class="form-group">
+          <label for="editNotes">Notes (optional)</label>
+          <textarea id="editNotes" placeholder="How are you feeling?"></textarea>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+          <button type="button" class="btn-secondary" onclick="closeEditReadingModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Full Log Modal -->
+  <div class="full-log-modal" id="fullLogModal">
+    <div class="full-log-header">
+      <h2>Reading History</h2>
+      <button class="full-log-close" onclick="closeFullLog()">✕</button>
+    </div>
+    <div class="full-log-content">
+      <div class="full-log-filters">
+        <select id="fullLogTagFilter">
+          <option value="all">All Tags</option>
+        </select>
+        <input type="month" id="fullLogMonthFilter">
+      </div>
+      <div id="fullLogReadings"></div>
     </div>
   </div>
 
@@ -2674,12 +2861,28 @@
         }
       }
 
-      if (recent.length === 0) {
+      const viewAllBtn = document.getElementById('viewAllBtn');
+      
+      if (appData.readings.length === 0) {
         container.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">📊</div>
             <div class="empty-state-text">No readings yet</div>
             <div class="empty-state-subtext">Click "Add Reading" to get started</div>
+          </div>
+        `;
+        viewAllBtn.style.display = 'none';
+        return;
+      }
+      
+      viewAllBtn.style.display = appData.readings.length > 10 ? 'block' : 'none';
+      
+      if (recent.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-text">No matching readings</div>
+            <div class="empty-state-subtext">Try a different filter</div>
           </div>
         `;
         return;
@@ -2704,7 +2907,7 @@
         }
 
         return `
-          <div class="reading-item" data-reading-id="${r.id}">
+          <div class="reading-item" data-reading-id="${r.id}" onclick="openEditReading('${r.id}')">
             <div class="reading-info">
               <div class="reading-header">
                 <span class="reading-tag">${tagName}</span>
@@ -2713,7 +2916,7 @@
               <div class="reading-value ${statusClass}">${r.reading} mg/dL</div>
               ${r.notes ? `<div class="reading-notes">${r.notes}</div>` : ''}
             </div>
-            <button class="delete-btn" onclick="deleteReading('${r.id}')" aria-label="Delete">🗑️</button>
+            <button class="delete-btn" onclick="deleteReading('${r.id}', event)" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"/></svg></button>
           </div>
         `;
       }).join('');
@@ -2754,11 +2957,190 @@
       updateUI();
     }
 
-    function deleteReading(id) {
+    function deleteReading(id, event) {
+      if (event) event.stopPropagation();
       if (confirm('Delete this reading?')) {
         appData.readings = appData.readings.filter(r => r.id !== id);
         saveData();
         updateUI();
+        updateFullLogIfOpen();
+      }
+    }
+
+    function openEditReading(id) {
+      const reading = appData.readings.find(r => r.id === id);
+      if (!reading) return;
+
+      document.getElementById('editReadingId').value = reading.id;
+      
+      const date = new Date(reading.timestamp);
+      const localTimestamp = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 16);
+      document.getElementById('editTimestamp').value = localTimestamp;
+      
+      const tagSelect = document.getElementById('editTag');
+      tagSelect.innerHTML = '';
+      
+      Object.entries(TAG_NAMES).forEach(([value, name]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = name;
+        tagSelect.appendChild(option);
+      });
+      
+      appData.customTags.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.id;
+        option.textContent = t.name;
+        tagSelect.appendChild(option);
+      });
+      
+      tagSelect.value = reading.tag;
+      document.getElementById('editReading').value = reading.reading;
+      document.getElementById('editNotes').value = reading.notes || '';
+      
+      document.getElementById('editReadingModal').classList.add('show');
+    }
+
+    function closeEditReadingModal() {
+      document.getElementById('editReadingModal').classList.remove('show');
+    }
+
+    function submitEditReading(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('editReadingId').value;
+      const reading = appData.readings.find(r => r.id === id);
+      if (!reading) return;
+
+      reading.timestamp = new Date(document.getElementById('editTimestamp').value).toISOString();
+      reading.tag = document.getElementById('editTag').value;
+      reading.reading = parseFloat(document.getElementById('editReading').value);
+      reading.notes = document.getElementById('editNotes').value;
+
+      saveData();
+      updateUI();
+      closeEditReadingModal();
+      updateFullLogIfOpen();
+    }
+
+    function showFullLog() {
+      populateFullLogFilters();
+      updateFullLog();
+      document.getElementById('fullLogModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeFullLog() {
+      document.getElementById('fullLogModal').classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function populateFullLogFilters() {
+      const tagSelect = document.getElementById('fullLogTagFilter');
+      tagSelect.innerHTML = '<option value="all">All Tags</option>';
+      
+      const usedTags = [...new Set(appData.readings.map(r => r.tag))].sort();
+      usedTags.forEach(tag => {
+        const tagName = TAG_NAMES[tag] || appData.customTags.find(t => t.id === tag)?.name || tag;
+        const option = document.createElement('option');
+        option.value = tag;
+        option.textContent = tagName;
+        tagSelect.appendChild(option);
+      });
+
+      const monthInput = document.getElementById('fullLogMonthFilter');
+      if (appData.readings.length > 0) {
+        const dates = appData.readings.map(r => new Date(r.timestamp));
+        const latestDate = new Date(Math.max(...dates));
+        monthInput.value = latestDate.toISOString().slice(0, 7);
+      } else {
+        monthInput.value = new Date().toISOString().slice(0, 7);
+      }
+    }
+
+    function updateFullLog() {
+      const container = document.getElementById('fullLogReadings');
+      const tagFilter = document.getElementById('fullLogTagFilter').value;
+      const monthFilter = document.getElementById('fullLogMonthFilter').value;
+
+      let filtered = [...appData.readings];
+      
+      if (tagFilter !== 'all') {
+        filtered = filtered.filter(r => r.tag === tagFilter);
+      }
+      
+      if (monthFilter) {
+        filtered = filtered.filter(r => r.timestamp.startsWith(monthFilter));
+      }
+
+      filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-text">No readings found</div>
+            <div class="empty-state-subtext">Try adjusting your filters</div>
+          </div>
+        `;
+        return;
+      }
+
+      const grouped = {};
+      filtered.forEach(r => {
+        const dateKey = r.timestamp.slice(0, 10);
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push(r);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([date, readings]) => {
+        const dateObj = new Date(date + 'T12:00:00');
+        const dateStr = dateObj.toLocaleDateString('en-US', { 
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+        });
+        
+        return `
+          <div class="log-date-group">
+            <div class="log-date-header">${dateStr}</div>
+            ${readings.map(r => {
+              const time = new Date(r.timestamp).toLocaleTimeString('en-US', { 
+                hour: 'numeric', minute: '2-digit' 
+              });
+              const tagName = TAG_NAMES[r.tag] || appData.customTags.find(t => t.id === r.tag)?.name || r.tag;
+              const range = getRange(r.tag);
+              let statusClass = '';
+              if (range) {
+                if (r.reading >= range.low && r.reading <= range.high) {
+                  statusClass = 'in-range';
+                } else if (range.warning && r.reading > range.high && r.reading <= range.warning) {
+                  statusClass = 'warning';
+                } else {
+                  statusClass = 'danger';
+                }
+              }
+              return `
+                <div class="reading-item" data-reading-id="${r.id}" onclick="openEditReading('${r.id}')">
+                  <div class="reading-info">
+                    <div class="reading-header">
+                      <span class="reading-tag">${tagName}</span>
+                      <span class="reading-time">${time}</span>
+                    </div>
+                    <div class="reading-value ${statusClass}">${r.reading} mg/dL</div>
+                    ${r.notes ? `<div class="reading-notes">${r.notes}</div>` : ''}
+                  </div>
+                  <button class="delete-btn" onclick="deleteReading('${r.id}', event)" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"/></svg></button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateFullLogIfOpen() {
+      if (document.getElementById('fullLogModal').classList.contains('show')) {
+        updateFullLog();
       }
     }
 
@@ -3159,6 +3541,11 @@
           toggleTag(e.target.dataset.tag);
         }
       });
+
+      document.getElementById('editReadingForm').addEventListener('submit', submitEditReading);
+      
+      document.getElementById('fullLogTagFilter').addEventListener('change', updateFullLog);
+      document.getElementById('fullLogMonthFilter').addEventListener('change', updateFullLog);
     }
 
     // Start app
