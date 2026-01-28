@@ -1,7 +1,7 @@
 {
   "profile": "pregnant",
   "readings": [
-    {"id": "1737608400000", "timestamp": "2026-01-23T08:00:00.000-06:00", "tag": "post-breakfast1", "reading": 107, "notes": "1hr post breakfast (+15 min)"},
+    {"id": "1737608400000", "timestamp": "2026-01-23T08:00:00.000-06:00", "tag": "post-breakfast1", "reading": 107, "notes": "15 min late)"},
     {"id": "1737626400000", "timestamp": "2026-01-23T13:00:00.000-06:00", "tag": "post-lunch1", "reading": 151, "notes": ""},
     {"id": "1737630000000", "timestamp": "2026-01-23T14:00:00.000-06:00", "tag": "post-lunch2", "reading": 123, "notes": ""},
     {"id": "1737650400000", "timestamp": "2026-01-23T18:30:00.000-06:00", "tag": "post-dinner1", "reading": 100, "notes": ""},
