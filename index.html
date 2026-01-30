@@ -2099,6 +2099,8 @@
 
     function saveData() {
       try {
+        // Keep readings sorted by timestamp
+        appData.readings.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         localStorage.setItem('blood-sugar-data', JSON.stringify(appData));
         localStorage.setItem('blood-sugar-timestamp', new Date().toISOString());
       } catch (error) {
@@ -2530,7 +2532,7 @@
           y: r.reading,
           notes: r.notes,
           readingId: r.id
-        }));
+        })).sort((a, b) => a.x - b.x);
 
         const color = TAG_COLORS[tag] || '#9E9E9E';
 
@@ -3179,6 +3181,9 @@
           weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
         });
         
+        // Sort readings within each day by timestamp (newest first)
+        readings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
         return `
           <div class="log-date-group">
             <div class="log-date-header">${dateStr}</div>
@@ -3399,6 +3404,7 @@
 
     // Data Export/Import
     function downloadDataJSON() {
+      // Data is already sorted by saveData()
       const dataStr = JSON.stringify(appData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(dataBlob);
@@ -3450,7 +3456,7 @@
           if (confirm('This will replace all current data including settings. Continue?')) {
             appData = data;
             if (!appData.customTags) appData.customTags = [];
-            saveData();
+            saveData(); // saveData() sorts readings
             updateUI();
             alert('Data imported successfully');
           }
@@ -3790,6 +3796,13 @@
 
     // Start app
     init();
+
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service worker registered'))
+        .catch(err => console.log('Service worker registration failed:', err));
+    }
   </script>
 </body>
 </html>

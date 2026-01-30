@@ -1,17 +1,23 @@
-const CACHE_NAME = 'blood-sugar-v1';
+const CACHE_NAME = 'blood-sugar-v3';
 const urlsToCache = [
-  './blood-sugar-tracker.html',
+  './',
+  './index.html',
   './manifest.json',
+  './favicon.ico',
+  './favicon.svg',
+  './favicon-96x96.png',
+  './apple-touch-icon.png',
+  './web-app-manifest-192x192.png',
+  './web-app-manifest-512x512.png',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-  'https://accounts.google.com/gsi/client'
+  'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache.filter(url => !url.includes('accounts.google.com')));
-      })
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
@@ -23,12 +29,12 @@ self.addEventListener('activate', event => {
           .filter(cacheName => cacheName !== CACHE_NAME)
           .map(cacheName => caches.delete(cacheName))
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', event => {
-  // Skip Google API requests
+  // Skip Google API requests - they require network
   if (event.request.url.includes('accounts.google.com') || 
       event.request.url.includes('googleapis.com')) {
     return;
@@ -40,19 +46,21 @@ self.addEventListener('fetch', event => {
         if (response) {
           return response;
         }
-        return fetch(event.request).then(response => {
-          // Don't cache if not a success response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
+        
+        return fetch(event.request).then(networkResponse => {
+          // Cache successful responses for future offline use
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
               cache.put(event.request, responseToCache);
             });
-
-          return response;
+          }
+          return networkResponse;
+        }).catch(() => {
+          // If both cache and network fail, return offline fallback for navigation
+          if (event.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
         });
       })
   );
