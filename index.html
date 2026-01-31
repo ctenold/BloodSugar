@@ -1519,6 +1519,136 @@
       outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
+
+    /* Verse of the Day Modal */
+    .verse-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(45, 52, 54, 0.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.4s ease;
+      padding: 20px;
+    }
+
+    .verse-modal.show {
+      display: flex;
+    }
+
+    .verse-modal-content {
+      background: var(--bg-card);
+      border-radius: 24px;
+      padding: 40px 36px 36px;
+      max-width: 480px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 32px 80px var(--shadow-lg);
+      border: 1px solid var(--border-color);
+      animation: slideUp 0.5s ease;
+      position: relative;
+      text-align: center;
+    }
+
+    .verse-modal-header {
+      margin-bottom: 28px;
+    }
+
+    .verse-modal-header h2 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      color: var(--text-primary);
+      font-size: 1.85em;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .verse-modal-verse-box {
+      background: var(--accent-sage);
+      border-radius: 20px;
+      padding: 32px 28px;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .verse-modal-verse-box::before {
+      content: '"';
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 4em;
+      color: var(--primary);
+      opacity: 0.25;
+      line-height: 1;
+    }
+
+    .verse-modal-text {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-style: italic;
+      font-size: 1.25em;
+      line-height: 1.8;
+      color: var(--text-primary);
+      padding-left: 16px;
+      margin-bottom: 16px;
+    }
+
+    .verse-modal-ref {
+      font-size: 0.95em;
+      color: var(--primary);
+      font-weight: 600;
+      padding-left: 16px;
+    }
+
+    .verse-modal-btn {
+      background: var(--primary);
+      border: none;
+      color: white;
+      padding: 16px 48px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1.05em;
+      font-weight: 600;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(124, 152, 133, 0.35);
+    }
+
+    .verse-modal-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(124, 152, 133, 0.45);
+    }
+
+    @media (max-width: 600px) {
+      .verse-modal-content {
+        padding: 32px 24px 28px;
+        border-radius: 20px;
+      }
+
+      .verse-modal-header h2 {
+        font-size: 1.6em;
+      }
+
+      .verse-modal-verse-box {
+        padding: 24px 20px;
+      }
+
+      .verse-modal-text {
+        font-size: 1.15em;
+      }
+
+      .verse-modal-btn {
+        padding: 14px 36px;
+        font-size: 1em;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1931,6 +2061,20 @@
     </div>
   </div>
 
+  <!-- Verse of the Day Modal -->
+  <div class="verse-modal" id="verseModal">
+    <div class="verse-modal-content">
+      <div class="verse-modal-header">
+        <h2>Verse of the Day</h2>
+      </div>
+      <div class="verse-modal-verse-box">
+        <div class="verse-modal-text" id="verseModalText"></div>
+        <div class="verse-modal-ref" id="verseModalRef"></div>
+      </div>
+      <button class="verse-modal-btn" onclick="closeVerseModal()">Amen</button>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -2051,6 +2195,7 @@
         showProfileModal();
       } else {
         updateUI();
+        checkAndShowVerseModal();
       }
 
       initGoogleAPI();
@@ -2185,6 +2330,28 @@
 
       document.getElementById('verseText').textContent = verse.text;
       document.getElementById('verseRef').textContent = verse.ref;
+    }
+
+    // Verse of the Day Modal
+    function checkAndShowVerseModal() {
+      const today = new Date().toDateString();
+      const lastShownDate = localStorage.getItem('blood-sugar-verse-modal-date');
+      
+      // Only show if we haven't shown it today
+      if (lastShownDate !== today) {
+        const verseText = document.getElementById('verseText').textContent;
+        const verseRef = document.getElementById('verseRef').textContent;
+        
+        document.getElementById('verseModalText').textContent = verseText;
+        document.getElementById('verseModalRef').textContent = verseRef;
+        document.getElementById('verseModal').classList.add('show');
+      }
+    }
+
+    function closeVerseModal() {
+      document.getElementById('verseModal').classList.remove('show');
+      // Save that we've shown the modal today
+      localStorage.setItem('blood-sugar-verse-modal-date', new Date().toDateString());
     }
 
     // Date/Time
@@ -2926,7 +3093,7 @@
 
     function updateRecentReadings() {
       const container = document.getElementById('recentReadings');
-      let recent = [...appData.readings].sort((a, b) => 
+      let recent = [...appData.readings].sort((a, b) =>
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 10);
 
@@ -2971,8 +3138,8 @@
 
       container.innerHTML = recent.map(r => {
         const date = new Date(r.timestamp);
-        const timeStr = date.toLocaleString('en-US', { 
-          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' 
+        const timeStr = date.toLocaleString('en-US', {
+          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
         const tagName = TAG_NAMES[r.tag] || appData.customTags.find(t => t.id === r.tag)?.name || r.tag;
         const range = getRange(r.tag);
@@ -3177,7 +3344,7 @@
 
       container.innerHTML = Object.entries(grouped).map(([date, readings]) => {
         const dateObj = new Date(date + 'T12:00:00');
-        const dateStr = dateObj.toLocaleDateString('en-US', { 
+        const dateStr = dateObj.toLocaleDateString('en-US', {
           weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
         });
         
@@ -3188,8 +3355,8 @@
           <div class="log-date-group">
             <div class="log-date-header">${dateStr}</div>
             ${readings.map(r => {
-              const time = new Date(r.timestamp).toLocaleTimeString('en-US', { 
-                hour: 'numeric', minute: '2-digit' 
+              const time = new Date(r.timestamp).toLocaleTimeString('en-US', {
+                hour: 'numeric', minute: '2-digit'
               });
               const tagName = TAG_NAMES[r.tag] || appData.customTags.find(t => t.id === r.tag)?.name || r.tag;
               const range = getRange(r.tag);
@@ -3399,6 +3566,13 @@
     document.getElementById('shareModal').addEventListener('click', (e) => {
       if (e.target.id === 'shareModal') {
         closeShareModal();
+      }
+    });
+
+    // Verse modal click outside to close
+    document.getElementById('verseModal').addEventListener('click', (e) => {
+      if (e.target.id === 'verseModal') {
+        closeVerseModal();
       }
     });
 
@@ -3742,6 +3916,7 @@
           saveData();
           hideProfileModal();
           updateUI();
+          checkAndShowVerseModal();
         }
       });
 
