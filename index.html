@@ -2882,8 +2882,18 @@
           scales: {
             x: {
               type: 'time',
-              time: { unit: 'hour', displayFormats: { hour: 'h:mm a' } },
-              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') }
+              time: {
+                unit: 'hour',
+                displayFormats: { hour: 'h:mm a' },
+                stepSize: 1
+              },
+              ticks: {
+                maxTicksLimit: 6,
+                source: 'auto'
+              },
+              grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
+              min: data.length > 0 ? new Date(Math.min(...data.map(d => d.x.getTime())) - 30 * 60 * 1000) : undefined,
+              max: data.length > 0 ? new Date(Math.max(...data.map(d => d.x.getTime())) + 30 * 60 * 1000) : undefined
             },
             y: {
               beginAtZero: false,
