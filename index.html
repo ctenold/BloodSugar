@@ -2891,12 +2891,21 @@
               type: 'time',
               time: {
                 unit: 'hour',
-                displayFormats: { hour: 'h:mm a' },
-                stepSize: 1
+                displayFormats: { hour: 'h:mm a' }
               },
               ticks: {
-                maxTicksLimit: 6,
-                source: 'auto'
+                maxTicksLimit: 8,
+                autoSkip: false,
+                callback: function(value, index, values) {
+                  // Always show at least 2 ticks, and distribute evenly
+                  if (values.length <= 1) return value;
+                  // Show first, last, and some in between
+                  if (index === 0 || index === values.length - 1) return value;
+                  // Show approximately 4-6 ticks total
+                  const step = Math.ceil(values.length / 5);
+                  if (index % step === 0) return value;
+                  return null;
+                }
               },
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
               min: data.length > 0 ? new Date(Math.min(...data.map(d => d.x.getTime())) - 30 * 60 * 1000) : undefined,
