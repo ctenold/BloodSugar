@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#7c9885">
   <meta name="description" content="Glucose Journal - A peaceful way to track and monitor your blood sugar levels">
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
@@ -2206,6 +2208,28 @@
       }
 
       initGoogleAPI();
+      
+      // Refresh timestamp when app resumes from background (fixes iOS issue)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          setCurrentDateTime();
+          // Check if day changed while app was backgrounded - refresh verse if needed
+          const today = new Date().toDateString();
+          const savedVerseDate = localStorage.getItem('blood-sugar-verse-date');
+          if (savedVerseDate !== today) {
+            displayVerse();
+            checkAndShowVerseModal();
+          }
+        }
+      });
+      
+      // Also handle iOS-specific page show event (back/forward cache)
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          setCurrentDateTime();
+          displayVerse();
+        }
+      });
     }
 
     // Theme
