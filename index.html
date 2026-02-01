@@ -2638,7 +2638,10 @@
       const filtersRow = document.getElementById('chartFilters');
       const timeRangeSelector = document.getElementById('timeRangeSelector');
 
-      const dates = [...new Set(appData.readings.map(r => r.timestamp.split('T')[0]))].sort().reverse();
+      const dates = [...new Set(appData.readings.map(r => {
+        const d = new Date(r.timestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }))].sort().reverse();
       const tags = [...new Set(appData.readings.map(r => r.tag))];
 
       dateFilter.innerHTML = dates.map(d => `<option value="${d}">${new Date(d).toLocaleDateString()}</option>`).join('');
@@ -2792,7 +2795,11 @@
         return;
       }
 
-      const dayReadings = appData.readings.filter(r => r.timestamp.startsWith(selectedDate));
+      const dayReadings = appData.readings.filter(r => {
+        const d = new Date(r.timestamp);
+        const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return localDate === selectedDate;
+      });
 
       if (dayReadings.length === 0) {
         renderEmptyChart(canvas, ctx);
@@ -3345,7 +3352,11 @@
       }
       
       if (monthFilter) {
-        filtered = filtered.filter(r => r.timestamp.startsWith(monthFilter));
+        filtered = filtered.filter(r => {
+          const d = new Date(r.timestamp);
+          const localMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          return localMonth === monthFilter;
+        });
       }
 
       filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -3363,7 +3374,8 @@
 
       const grouped = {};
       filtered.forEach(r => {
-        const dateKey = r.timestamp.slice(0, 10);
+        const d = new Date(r.timestamp);
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         if (!grouped[dateKey]) grouped[dateKey] = [];
         grouped[dateKey].push(r);
       });
