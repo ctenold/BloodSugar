@@ -496,6 +496,7 @@
       margin: 20px 0;
       border-left: none;
       position: relative;
+      cursor: pointer;
     }
 
     .verse-box::before {
@@ -2228,6 +2229,7 @@
         if (event.persisted) {
           setCurrentDateTime();
           displayVerse();
+          checkAndShowVerseModal();
         }
       });
     }
@@ -2364,18 +2366,22 @@
     }
 
     // Verse of the Day Modal
+    function openVerseModal() {
+      const verseText = document.getElementById('verseText').textContent;
+      const verseRef = document.getElementById('verseRef').textContent;
+
+      document.getElementById('verseModalText').textContent = verseText;
+      document.getElementById('verseModalRef').textContent = verseRef;
+      document.getElementById('verseModal').classList.add('show');
+    }
+
     function checkAndShowVerseModal() {
       const today = new Date().toDateString();
       const lastShownDate = localStorage.getItem('blood-sugar-verse-modal-date');
       
       // Only show if we haven't shown it today
       if (lastShownDate !== today) {
-        const verseText = document.getElementById('verseText').textContent;
-        const verseRef = document.getElementById('verseRef').textContent;
-        
-        document.getElementById('verseModalText').textContent = verseText;
-        document.getElementById('verseModalRef').textContent = verseRef;
-        document.getElementById('verseModal').classList.add('show');
+        openVerseModal();
       }
     }
 
@@ -3964,6 +3970,7 @@
       document.getElementById('tag').addEventListener('change', handleTagChange);
       document.getElementById('reading').addEventListener('input', updateRangeIndicator);
       document.getElementById('timestamp').addEventListener('change', updateTagDropdown);
+      document.getElementById('verseBox').addEventListener('click', openVerseModal);
 
       document.querySelectorAll('.profile-option').forEach(option => {
         option.addEventListener('click', () => {
