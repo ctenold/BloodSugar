@@ -3970,7 +3970,11 @@
       document.getElementById('tag').addEventListener('change', handleTagChange);
       document.getElementById('reading').addEventListener('input', updateRangeIndicator);
       document.getElementById('timestamp').addEventListener('change', updateTagDropdown);
-      document.getElementById('verseBox').addEventListener('click', openVerseModal);
+      const verseBox = document.getElementById('verseBox');
+      verseBox.addEventListener('click', openVerseModal);
+      verseBox.addEventListener('touchend', () => {
+        openVerseModal();
+      });
 
       document.querySelectorAll('.profile-option').forEach(option => {
         option.addEventListener('click', () => {
