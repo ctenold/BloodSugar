@@ -2668,7 +2668,10 @@
       }))].sort().reverse();
       const tags = [...new Set(appData.readings.map(r => r.tag))];
 
-      dateFilter.innerHTML = dates.map(d => `<option value="${d}">${new Date(d).toLocaleDateString()}</option>`).join('');
+      dateFilter.innerHTML = dates.map(d => {
+        const localDate = new Date(`${d}T00:00:00`);
+        return `<option value="${d}">${localDate.toLocaleDateString()}</option>`;
+      }).join('');
       tagFilter.innerHTML = tags.map(t => `<option value="${t}">${TAG_NAMES[t] || appData.customTags.find(ct => ct.id === t)?.name || t}</option>`).join('');
 
       if (!selectedDate && dates.length) selectedDate = dates[0];
@@ -2819,10 +2822,13 @@
         return;
       }
 
+      const dayStart = new Date(`${selectedDate}T00:00:00`);
+      const dayEnd = new Date(dayStart);
+      dayEnd.setDate(dayEnd.getDate() + 1);
+
       const dayReadings = appData.readings.filter(r => {
         const d = new Date(r.timestamp);
-        const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        return localDate === selectedDate;
+        return d >= dayStart && d < dayEnd;
       });
 
       if (dayReadings.length === 0) {
@@ -2858,7 +2864,6 @@
       });
 
       const dataWithRanges = data.filter(d => d.low != null && d.high != null);
-      console.log('Daily chart debug:', { profile: appData.profile, dataCount: data.length, withRanges: dataWithRanges.length, sampleData: data[0] });
       
       if (dataWithRanges.length > 0) {
         datasets.push({
@@ -2928,19 +2933,16 @@
                 maxTicksLimit: 8,
                 autoSkip: false,
                 callback: function(value, index, values) {
-                  // Always show at least 2 ticks, and distribute evenly
                   if (values.length <= 1) return value;
-                  // Show first, last, and some in between
                   if (index === 0 || index === values.length - 1) return value;
-                  // Show approximately 4-6 ticks total
                   const step = Math.ceil(values.length / 5);
                   if (index % step === 0) return value;
                   return null;
                 }
               },
               grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border-color') },
-              min: data.length > 0 ? new Date(Math.min(...data.map(d => d.x.getTime())) - 30 * 60 * 1000) : undefined,
-              max: data.length > 0 ? new Date(Math.max(...data.map(d => d.x.getTime())) + 30 * 60 * 1000) : undefined
+              min: dayStart,
+              max: dayEnd
             },
             y: {
               beginAtZero: false,
