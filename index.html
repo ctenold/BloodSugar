@@ -1692,7 +1692,7 @@
         </button>
       </div>
 
-      <div class="verse-box" id="verseBox">
+      <div class="verse-box" id="verseBox" role="button" tabindex="0" aria-label="Open verse of the day" onclick="openVerseModal()">
         <div class="verse-text" id="verseText">Loading verse...</div>
         <div class="verse-ref" id="verseRef"></div>
       </div>
@@ -3972,8 +3972,11 @@
       document.getElementById('timestamp').addEventListener('change', updateTagDropdown);
       const verseBox = document.getElementById('verseBox');
       verseBox.addEventListener('click', openVerseModal);
-      verseBox.addEventListener('touchend', () => {
-        openVerseModal();
+      verseBox.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openVerseModal();
+        }
       });
 
       document.querySelectorAll('.profile-option').forEach(option => {
