@@ -2009,7 +2009,7 @@
               <label for="csvExportRange">CSV date range</label>
               <select id="csvExportRange" onchange="onCsvRangeChange()">
                 <option value="all">All data</option>
-                <option value="30">Last 30 days</option>
+                <option value="14">Last 14 days</option>
                 <option value="since">Since a date&hellip;</option>
               </select>
               <input type="date" id="csvExportSince" style="display: none;" aria-label="Export CSV readings since this date">
@@ -3722,11 +3722,11 @@
       let cutoff = null;
       let rangeLabel = '';
 
-      if (range === '30') {
+      if (range === '14') {
         cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 30);
+        cutoff.setDate(cutoff.getDate() - 14);
         cutoff.setHours(0, 0, 0, 0);
-        rangeLabel = 'last-30-days';
+        rangeLabel = 'last-14-days';
       } else if (range === 'since') {
         const sinceVal = document.getElementById('csvExportSince')?.value || '';
         if (!sinceVal) {
