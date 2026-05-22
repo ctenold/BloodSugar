@@ -1286,31 +1286,36 @@
       line-height: 1.6;
     }
 
-    .csv-export-range {
+    .csv-range-option {
       display: flex;
-      gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .csv-export-range label {
-      font-size: 0.9em;
-      color: var(--text-secondary);
-      white-space: nowrap;
-    }
-
-    .csv-export-range select,
-    .csv-export-range input[type="date"] {
-      flex: 1;
-      min-width: 130px;
-      padding: 10px 14px;
+      gap: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
       border: 1px solid var(--border-color);
-      border-radius: 10px;
+      border-radius: 12px;
       background: var(--bg-secondary);
       color: var(--text-primary);
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 0.95em;
+      font-size: 1em;
       cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .csv-range-option:hover {
+      border-color: var(--primary);
+    }
+
+    .csv-range-option:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--bg-card);
+    }
+
+    .csv-range-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
     }
 
     /* Target Ranges */
@@ -2002,18 +2007,9 @@
           <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             <div style="display: flex; gap: 8px;">
               <button class="btn-secondary" style="flex: 1;" onclick="downloadDataJSON()">Export JSON</button>
-              <button class="btn-secondary" style="flex: 1;" onclick="downloadDataCSV()">Export CSV</button>
+              <button class="btn-secondary" style="flex: 1;" onclick="openCsvExportModal()">Export CSV</button>
             </div>
             <p class="setting-description" style="margin: 4px 0;">JSON = full backup (settings + readings). CSV = readings only (Excel-friendly).</p>
-            <div class="csv-export-range">
-              <label for="csvExportRange">CSV date range</label>
-              <select id="csvExportRange" onchange="onCsvRangeChange()">
-                <option value="all">All data</option>
-                <option value="14">Last 14 days</option>
-                <option value="since">Since a date&hellip;</option>
-              </select>
-              <input type="date" id="csvExportSince" style="display: none;" aria-label="Export CSV readings since this date">
-            </div>
             <div style="display: flex; gap: 8px;">
               <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputJSON').click()">Import JSON</button>
               <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputCSV').click()">Import CSV</button>
@@ -2070,6 +2066,37 @@
           <button type="button" class="btn-secondary" onclick="closeEditReadingModal()">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- CSV Export Modal -->
+  <div class="modal" id="csvExportModal">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeCsvExportModal()" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <h2>Export CSV</h2>
+        <p>Choose how much of your journal to include.</p>
+      </div>
+      <label class="csv-range-option">
+        <input type="radio" name="csvRange" value="all" checked onchange="onCsvRangeChange()">
+        <span>All data</span>
+      </label>
+      <label class="csv-range-option">
+        <input type="radio" name="csvRange" value="14" onchange="onCsvRangeChange()">
+        <span>Last 14 days</span>
+      </label>
+      <label class="csv-range-option">
+        <input type="radio" name="csvRange" value="since" onchange="onCsvRangeChange()">
+        <span>Since a specific date</span>
+      </label>
+      <div class="form-group" id="csvSinceWrapper" style="display: none; margin-top: 16px;">
+        <label for="csvExportSince">Export readings on or after</label>
+        <input type="date" id="csvExportSince">
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 8px;">
+        <button type="button" class="btn-primary" style="flex: 1;" onclick="downloadDataCSV()">Export CSV</button>
+        <button type="button" class="btn-secondary" onclick="closeCsvExportModal()">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -3682,6 +3709,13 @@
       }
     });
 
+    // CSV export modal click outside to close
+    document.getElementById('csvExportModal').addEventListener('click', (e) => {
+      if (e.target.id === 'csvExportModal') {
+        closeCsvExportModal();
+      }
+    });
+
     // Data Export/Import
     function downloadDataJSON() {
       // Data is already sorted by saveData()
@@ -3695,19 +3729,35 @@
       URL.revokeObjectURL(url);
     }
 
+    function openCsvExportModal() {
+      if (!appData.readings || appData.readings.length === 0) {
+        alert('No readings to export');
+        return;
+      }
+      document.querySelector('input[name="csvRange"][value="all"]').checked = true;
+      onCsvRangeChange();
+      document.getElementById('csvExportModal').classList.add('show');
+    }
+
+    function closeCsvExportModal() {
+      document.getElementById('csvExportModal').classList.remove('show');
+    }
+
     // Show/hide the "since" date picker based on the selected CSV export range
     function onCsvRangeChange() {
+      const range = document.querySelector('input[name="csvRange"]:checked').value;
+      const wrapper = document.getElementById('csvSinceWrapper');
       const sinceInput = document.getElementById('csvExportSince');
-      if (document.getElementById('csvExportRange').value === 'since') {
+      if (range === 'since') {
         sinceInput.max = new Date().toISOString().split('T')[0];
         if (!sinceInput.value) {
           const d = new Date();
-          d.setDate(d.getDate() - 30);
+          d.setDate(d.getDate() - 14);
           sinceInput.value = d.toISOString().split('T')[0];
         }
-        sinceInput.style.display = 'block';
+        wrapper.style.display = 'block';
       } else {
-        sinceInput.style.display = 'none';
+        wrapper.style.display = 'none';
       }
     }
 
@@ -3718,7 +3768,7 @@
       }
 
       // Determine the date range to export (read-only; appData is never modified)
-      const range = document.getElementById('csvExportRange')?.value || 'all';
+      const range = document.querySelector('input[name="csvRange"]:checked')?.value || 'all';
       let cutoff = null;
       let rangeLabel = '';
 
@@ -3771,6 +3821,7 @@
         : `glucose-readings-${today}.csv`;
       link.click();
       URL.revokeObjectURL(url);
+      closeCsvExportModal();
     }
 
     function uploadDataJSON(event) {
