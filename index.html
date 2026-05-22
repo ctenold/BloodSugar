@@ -1286,6 +1286,33 @@
       line-height: 1.6;
     }
 
+    .csv-export-range {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .csv-export-range label {
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .csv-export-range select,
+    .csv-export-range input[type="date"] {
+      flex: 1;
+      min-width: 130px;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 0.95em;
+      cursor: pointer;
+    }
+
     /* Target Ranges */
     .range-item {
       background: var(--bg-secondary);
@@ -1978,6 +2005,15 @@
               <button class="btn-secondary" style="flex: 1;" onclick="downloadDataCSV()">Export CSV</button>
             </div>
             <p class="setting-description" style="margin: 4px 0;">JSON = full backup (settings + readings). CSV = readings only (Excel-friendly).</p>
+            <div class="csv-export-range">
+              <label for="csvExportRange">CSV date range</label>
+              <select id="csvExportRange" onchange="onCsvRangeChange()">
+                <option value="all">All data</option>
+                <option value="30">Last 30 days</option>
+                <option value="since">Since a date&hellip;</option>
+              </select>
+              <input type="date" id="csvExportSince" style="display: none;" aria-label="Export CSV readings since this date">
+            </div>
             <div style="display: flex; gap: 8px;">
               <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputJSON').click()">Import JSON</button>
               <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('uploadInputCSV').click()">Import CSV</button>
@@ -3659,28 +3695,80 @@
       URL.revokeObjectURL(url);
     }
 
+    // Show/hide the "since" date picker based on the selected CSV export range
+    function onCsvRangeChange() {
+      const sinceInput = document.getElementById('csvExportSince');
+      if (document.getElementById('csvExportRange').value === 'since') {
+        sinceInput.max = new Date().toISOString().split('T')[0];
+        if (!sinceInput.value) {
+          const d = new Date();
+          d.setDate(d.getDate() - 30);
+          sinceInput.value = d.toISOString().split('T')[0];
+        }
+        sinceInput.style.display = 'block';
+      } else {
+        sinceInput.style.display = 'none';
+      }
+    }
+
     function downloadDataCSV() {
       if (!appData.readings || appData.readings.length === 0) {
         alert('No readings to export');
         return;
       }
-      const headers = ['Date', 'Time', 'Reading (mg/dL)', 'Tag', 'Notes'];
-      const rows = appData.readings
+
+      // Determine the date range to export (read-only; appData is never modified)
+      const range = document.getElementById('csvExportRange')?.value || 'all';
+      let cutoff = null;
+      let rangeLabel = '';
+
+      if (range === '30') {
+        cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30);
+        cutoff.setHours(0, 0, 0, 0);
+        rangeLabel = 'last-30-days';
+      } else if (range === 'since') {
+        const sinceVal = document.getElementById('csvExportSince')?.value || '';
+        if (!sinceVal) {
+          alert('Please choose a start date to export from.');
+          return;
+        }
+        const [y, m, d] = sinceVal.split('-').map(Number);
+        cutoff = new Date(y, m - 1, d, 0, 0, 0, 0);
+        rangeLabel = `since-${sinceVal}`;
+      }
+
+      const readings = appData.readings
         .slice()
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-        .map(r => {
-          const dt = new Date(r.timestamp);
-          const date = dt.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-          const time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-          const notes = (r.notes || '').replace(/"/g, '""');
-          return `"${date}","${time}","${r.reading}","${r.tag}","${notes}"`;
-        });
+        .filter(r => {
+          if (!cutoff) return true;
+          const t = new Date(r.timestamp);
+          return !isNaN(t) && t >= cutoff;
+        })
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      if (readings.length === 0) {
+        alert('No readings found in the selected date range.');
+        return;
+      }
+
+      const headers = ['Date', 'Time', 'Reading (mg/dL)', 'Tag', 'Notes'];
+      const rows = readings.map(r => {
+        const dt = new Date(r.timestamp);
+        const date = dt.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const time = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const notes = (r.notes || '').replace(/"/g, '""');
+        return `"${date}","${time}","${r.reading}","${r.tag}","${notes}"`;
+      });
       const csvContent = [headers.join(','), ...rows].join('\n');
       const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `glucose-readings-${new Date().toISOString().split('T')[0]}.csv`;
+      const today = new Date().toISOString().split('T')[0];
+      link.download = rangeLabel
+        ? `glucose-readings-${rangeLabel}-${today}.csv`
+        : `glucose-readings-${today}.csv`;
       link.click();
       URL.revokeObjectURL(url);
     }

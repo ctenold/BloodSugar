@@ -1,4 +1,4 @@
-const CACHE_NAME = 'blood-sugar-v3';
+const CACHE_NAME = 'blood-sugar-v4';
 const urlsToCache = [
   './',
   './index.html',
